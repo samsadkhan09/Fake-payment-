@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake Payment Generator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f7f6; /* Default background for the form page */
+            color: #333;
+            transition: background-color 0.3s ease; /* Smooth transition if body bg changes */
+        }
+
+        /* Form Page Styles */
+        .form-container-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .form-container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .form-container h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 22px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%; /* Full width within padding */
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .generate-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .generate-button:hover {
+            background-color: #45a049;
+        }
+        .generate-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Full Page Success Screen Styles */
+        .full-page-success {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff; /* Typically white or light grey for payment apps */
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        .full-page-success.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        .tick-container {
+            width: 100px; /* Can be adjusted */
+            height: 100px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+            transform: scale(0); 
+        }
+
+        .tick-mark {
+            width: 30px;
+            height: 55px;
+            border: solid white;
+            border-width: 0 10px 10px 0;
+            transform: rotate(45deg) translate(-5px, -5px);
+            opacity: 0;
+            animation: drawTick 0.4s 0.5s ease-out forwards;
+        }
+        
+        .success-heading {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .transaction-details {
+            background-color: #f9f9f9;
+            padding: 20px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-top: 20px;
+            width: 100%;
+            max-width: 400px; /* Or adjust as needed */
+            text-align: left;
+        }
+
+        .transaction-details p {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.7;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .transaction-details p strong {
+            color: #333;
+            font-weight: 600;
+            word-break: break-all; /* For long transaction IDs */
+        }
+        .transaction-details p span:first-child {
+             margin-right: 10px; /* Space between label and value */
+        }
+
+        .paid-amount-display {
+            font-size: 36px; /* Larger display for amount */
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes drawTick {
+            to { opacity: 1; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="form-container-wrapper" id="formPage">
+        <div class="form-container">
+            <h2>Enter Payment Details</h2>
+            <div class="input-group">
+                <label for="accountNumber">Recipient Account Number:</label>
+                <input type="text" id="accountNumber" placeholder="e.g., 123456789012">
+            </div>
+            <div class="input-group">
+                <label for="amount">Amount (?):</label>
+                <input type="number" id="amount" placeholder="e.g., 1000">
+            </div>
+            <div class="input-group">
+                <label for="fromName">Your Name (Sender):</label>
+                <input type="text" id="fromName" placeholder="e.g., John Doe">
+            </div>
+            <button class="generate-button" id="generateBtn">Proceed to Pay</button>
+        </div>
+    </div>
+
+    <div class="full-page-success" id="successPage">
+        <div class="tick-container">
+            <div class="tick-mark"></div>
+        </div>
+        <div class="success-heading">Payment Successful!</div>
+        <div class="paid-amount-display" id="paidAmountDisplay"></div>
+        
+        <div class="transaction-details">
+            <p><span>From:</span> <strong id="successFromName"></strong></p>
+            <p><span>To Account:</span> <strong id="successAccount"></strong></p>
+            <p><span>Transaction ID:</span> <strong id="successTxnId"></strong></p>
+            <p><span>Date & Time:</span> <strong id="successDateTime"></strong></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const formPage = document.getElementById('formPage');
+            const successPage = document.getElementById('successPage');
+            const generateBtn = document.getElementById('generateBtn');
+
+            const accountNumberInput = document.getElementById('accountNumber');
+            const amountInput = document.getElementById('amount');
+            const fromNameInput = document.getElementById('fromName');
+
+            // Elements on success page
+            const paidAmountDisplay = document.getElementById('paidAmountDisplay');
+            const successFromName = document.getElementById('successFromName');
+            const successAccount = document.getElementById('successAccount');
+            const successTxnId = document.getElementById('successTxnId');
+            const successDateTime = document.getElementById('successDateTime');
+
+            function generateTransactionId() {
+                // Generates a somewhat realistic looking Transaction ID
+                const prefix = "TXN";
+                const timestamp = Date.now().toString().slice(-8); // Last 8 digits of timestamp
+                const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+                return `${prefix}${timestamp}${randomPart}`;
+            }
+
+            function maskAccountNumber(accNum) {
+                const len = accNum.length;
+                if (len <= 4) {
+                    return 'X'.repeat(len); // Mask completely if 4 or less digits
+                }
+                // Show last 4 digits
+                return 'X'.repeat(len - 4) + accNum.slice(-4);
+            }
+
+            function getCurrentDateTime() {
+                const now = new Date();
+                const options = {
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: true 
+                };
+                return now.toLocaleString('en-IN', options).replace(',', ' -'); // e.g., 07 Jul 2024 - 08:30 PM
+            }
+
+            generateBtn.addEventListener('click', function() {
+                const accountNumber = accountNumberInput.value.trim();
+                const amountStr = amountInput.value.trim();
+                const fromName = fromNameInput.value.trim();
+
+                if (!accountNumber || !amountStr || !fromName) {
+                    alert('Please fill in all fields!');
+                    return;
+                }
+
+                const amount = parseFloat(amountStr);
+                if (isNaN(amount) || amount <= 0) {
+                    alert('Please enter a valid amount!');
+                    return;
+                }
+                
+                // Populate success screen details
+                paidAmountDisplay.textContent = `?${amount.toFixed(2)}`;
+                successFromName.textContent = fromName;
+                successAccount.textContent = maskAccountNumber(accountNumber);
+                successTxnId.textContent = generateTransactionId();
+                successDateTime.textContent = getCurrentDateTime();
+
+                // Change document title for realism
+                document.title = 'Payment Successful - MyApp';
+
+                // Hide form page and show success page with transition
+                formPage.style.display = 'none'; // Hide the form wrapper
+                document.body.style.backgroundColor = '#ffffff'; // Change body bg for success page
+                
+                successPage.classList.add('visible');
+
+                // To ensure animations re-run if this were to be triggered multiple times (not strictly necessary for one-shot)
+                const tickContainer = successPage.querySelector('.tick-container');
+                const tickMark = successPage.querySelector('.tick-mark');
+                tickContainer.style.animation = 'none';
+                tickMark.style.animation = 'none';
+                // Trigger reflow to restart animation
+                void tickContainer.offsetWidth; 
+                void tickMark.offsetWidth;
+                tickContainer.style.animation = '';
+                tickMark.style.animation = '';
+            });
+        });
+    </script>
+</body>
+<script type="text/javascript">
+	atOptions = {
+		'key' : '5395e377a6162916b4bfdde6777923cf',
+		'format' : 'iframe',
+		'height' : 60,
+		'width' : 468,
+		'params' : {}
+	};
+</script>
+<script type="text/javascript" src="//www.highperformanceformat.com/5395e377a6162916b4bfdde6777923cf/invoke.js"></script>
+</html>
